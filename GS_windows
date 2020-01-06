@@ -1,0 +1,106 @@
+import maya.cmds as cmds
+import pymel.core as pm
+import re
+import pymel.core.datatypes as dt
+from pymel.all import *
+from math import *
+
+
+
+########UI
+myWindow = cmds.window(title = ":: CFX Tool Box", w=450, h=650, sizeable=False) 
+form = cmds.formLayout() 
+tabs = cmds.tabLayout(innerMarginWidth=5, innerMarginHeight=5) 
+cmds.formLayout(form, edit=True, attachForm=((tabs, 'top', 0), (tabs, 'left', 0), (tabs, 'bottom', 0), (tabs, 'right', 0)))
+
+########HAIR UTILS TAB
+child1 = cmds.columnLayout('CFX HAIR TOOLS', adj=True)
+
+######## REBUILD CV 
+cmds.separator(height=10, style='shelf') 
+cmds.text(label="CURVE TOOLS", fn="boldLabelFont", align="center") 
+cmds.separator(height=5, style='none') 
+cmds.frameLayout('rebuild_cv', label=" REBUILD CV ", cll=True, cl=True, mh=0, bgc=[0.75,0.25,0.1]) 
+cmds.rowLayout( numberOfColumns=3, columnWidth3=(80, 75, 150), adjustableColumn=2, columnAlign=(1, 'right'), columnAttach=[(1, 'both', 0), (2, 'both', 0), (3, 'both', 0), (4, 'both', 0)] ) 
+cmds.button(label="rebuildLow", h=40, w=150, annotation="select curves first and hit the button", c='rebuildLow()') 
+cmds.button(label="rebuildMid", h=40, w=110, annotation="select curves first and hit the button", c='rebuildMid()') 
+cmds.button(label="rebuildHigh", h=40, w=110, annotation="select curves first and hit the button", c='rebuildHigh()') 
+cmds.setParent( '..' ) 
+cmds.setParent( '..' )
+
+######## POLY TO CV 
+cmds.separator(height=5, style='none') 
+cmds.frameLayout('createCurvePLY', label=" POLY TO CV ", cll=True, cl=True, mh=0, bgc=[0.7,0.25,0.1]) 
+textFieldGrpVar = cmds.textFieldButtonGrp( label='Select 2 extremity edges :', text="Write your cv name here", buttonLabel='Create CV', buttonCommand='create_mid_curve_from_edges(baseName=baseName)', annotation="Make sure to select 2 front extremity edges") 
+cmds.setParent( '..' )
+
+######## CUT CV
+cmds.separator(height=5, style='none') 
+cmds.frameLayout('detachedCurvedTool', label=" DETACHED CURVE ", cll=True, cl=True, mh=0, bgc=[0.7,0.25,0.1]) 
+cmds.button(label="Cut the curve", h=40, w=150, annotation="select your curve first and your NURBS surface", c='detachedCV()') 
+cmds.setParent( '..' )
+
+######## HAIR CTL 
+cmds.separator(height=20, style='shelf') 
+cmds.text(label="HAIR CTL", fn="boldLabelFont") 
+cmds.separator(height=5, style='none') 
+cmds.frameLayout('create_hairCTL', label=" Create HAIR CTL ", cll=True, cl=True, mh=0, bgc=[0.5,0.25,0.25]) 
+cmds.separator(height=1, style='none') 
+cmds.button(label="create HAIR CTL", h=30, w=125, c='createControl(name="hair_CTL",type="arrow", axis="y", color="lightGreen")', annotation="Create HAIR CTL for wind direction control") 
+cmds.button(label="connect HAIR CTL to Nucleus", annotation="Make sure to create first the HAIR CTL & have a nucleus in your scene", h=30,w=125, c="connect_Hair_CTL_To_nucleus()") 
+cmds.setParent( '..' ) 
+cmds.separator(height=10, style='shelf') 
+cmds.setParent( '..' )
+
+######## CLOTH UTILS TAB
+child2 = cmds.columnLayout('CFX CLOTH TOOLS', adj=True)
+
+######## HAIR CTL 
+cmds.separator(height=10, style='shelf') 
+cmds.frameLayout('', label="", cll=True, cl=True, mh=0) 
+cmds.setParent( '..' ) 
+cmds.setParent( '..' )
+
+######## MISC UTILS TAB
+child3 = cmds.columnLayout('CFX MISC UTILS', adj=True)
+
+######## CLEANERS MISC 
+cmds.separator(height=10, style='shelf') 
+cmds.text(label="CLEAN MISC", fn="boldLabelFont") 
+
+######## CLEAN MESH 
+cmds.separator(height=5, style='none') 
+cmds.button(label="Clean mesh", h=30, annotation="Unlock Normals and Soften Edge - Select your mesh first", c="cleanMesh()") 
+
+######## DG DIRY 
+cmds.separator(height=2, style='none') 
+cmds.button(label="dg Dirty", h=30, annotation="Clean your scene", c="dgDirty()")
+
+######## CONSTRAINTS MISC 
+cmds.separator(height=20, style='shelf') 
+cmds.text(label="CONSTRAINTS MISC", fn="boldLabelFont") 
+cmds.separator(height=5, style='none') 
+cmds.button(label="Rivet", h=30, annotation="Use Rivet to constrain locator to polygon or NURBS surfaces - select two edges on polygon object or select one point on NURBS surface and call rivet parent your rivets and buttons to this locator", c="ch4_rivet()") 
+cmds.separator(height=2, style='none') 
+cmds.button(label="Snap To", h=30, annotation="Use Snap To - select target first and then the object you want to snap to the target", c="snapTo(target, obj)")
+
+######## SET MANAGER 
+cmds.separator(height=20, style='shelf') 
+cmds.text(label="SET MANAGER", fn="boldLabelFont") 
+cmds.separator(height=5, style='none') 
+cmds.button(label="Add", h=30, w=125, annotation="Select object to add and select last the set", c="manageSet( mode= 'ADD' )") 
+cmds.button(label="Remove", h=30,w=125, annotation="Select object to remove and select last the set", c="manageSet( mode= 'REMOVE' )") 
+cmds.separator(height=10, style='shelf') 
+cmds.setParent( '..' )
+
+######## HELP TAB
+child4 = cmds.columnLayout("HELP", adj=True)
+
+######## HELPS
+cmds.separator(height=20, style='shelf') 
+cmds.text(label="HELP", fn="boldLabelFont", hl=True) 
+cmds.setParent( '..' )
+
+cmds.tabLayout(tabs, edit=True, tabLabel=((child1, 'CFX HAIR TOOLS'), (child2, 'CFX CLOTH TOOLS'), (child3, 'CFX MISC UTILS'), (child4, 'HELP')))
+
+cmds.showWindow(myWindow)
