@@ -1,0 +1,24 @@
+import maya.cmds as cmds
+ 
+def GS_createLocAtObjPivot():
+ 
+    #### get the first current selected object
+    try:
+        currSel = cmds.ls(selection=True)[0]
+    except IndexError: 
+        raise IndexError('Nothing selected. Please select something')
+ 
+    #### pull the pivot you are interested in.
+    #### Maya objects have two pivots, one for rotation, one for scale
+    #### Not guaranteed to be in the same place
+    rotPiv = cmds.xform(currSel, query=True, rotatePivot=True)  # query rotation pivot
+    scPiv = cmds.xform(currSel, query=True, scalePivot=True)  # query scale pivot
+ 
+    # create the locator and move it into position
+    loc = cmds.spaceLocator()
+    cmds.xform(translation=rotPiv)  # apply the translate of one of the queried pivots
+ 
+    # in case you want to manip the locator further
+    return loc
+ 
+GS_createLocAtObjPivot()
