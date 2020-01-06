@@ -1,0 +1,155 @@
+import maya.cmds as cmds
+import re
+ 
+def GS_rivet(name='rivet'):
+    '''
+    Launch GS_rivet for between given edges or on each given faces
+    name : string > to define the rivet name
+    '''   
+    #### Load needed plugin
+    load_plugin(toLoad=['rotateHelper', 'matrixNodes'])
+     
+    #### Get subComponent Selection
+    sels = cmds.ls(selection=True)
+     
+    #### keep only edges and faces
+    edges = cmds.filterExpand(sels, selectionMask=32) or []
+    faces = cmds.filterExpand(sels, selectionMask=34) or []
+     
+    #### Launch Build
+    if len(edges) == 2 :
+        ### Create a rivet inbetween to edges
+        build_GS_rivet(name, edges[0], edges[1])
+    elif faces :
+        for face in faces:
+            ## Create a rivet for each face selected
+            edges = convert_face_to_edges(face)
+            print edges
+            build_GS_rivet(name, edges[0], edges[1])
+    else:
+        print 'select 2 edges or faces to build rivet'
+ 
+def load_plugin(toLoad=list()):
+    '''
+    Check if the needed plugin already load. if not loaded, load and auto load check for the plugin
+     
+    :param toLoad: A list of the plugin name to load.
+    :type toLoad: list
+    '''
+    #### Get the plugin already loaded
+    plugin_loaded = cmds.pluginInfo(query=True, listPlugins=True)
+     
+    for plugin in toLoad:
+        ### Check if the plugin wasn't already load
+        if not plugin in plugin_loaded:
+            ## Load plugin
+            cmds.loadPlugin(plugin)
+        ### autoLoad plugin
+        if not cmds.pluginInfo(plugin, query=True, autoload=True):
+            cmds.pluginInfo(plugin, edit=True, autoload=True)
+ 
+def convert_face_to_edges(face):
+    '''
+    For a given face return two noncontinuous edges
+    face : string > the full face name
+    '''
+    #### convert face to edges
+    edges = cmds.ls(cmds.polyListComponentConversion(face, fromFace=True, toEdge=True), flatten=True)
+ 
+    #### For 3 edges Faces return the 2 first edges
+    if len(edges) == 3:
+        return [edges[0], edges[1]]
+ 
+    #### Create a vertex set with the first edge
+    setEdgeA = set(cmds.ls(cmds.polyListComponentConversion(edges[0], fromEdge=True, toVertex=True), flatten=True))
+     
+    #### Search an edge without commun vertex
+    for i in range( 1, len(edges) ):
+        setEdgeB = set(cmds.ls(cmds.polyListComponentConversion(edges[i], fromEdge=True, toVertex=True), flatten=True))
+        if not setEdgeA & setEdgeB:
+            ### return uncontinus edges
+            return [edges[0], edges[i]]
+ 
+ 
+def build_GS_rivet(name, edgeA, edgeB):
+    '''
+    Build a rivet between two given edges
+    Edges can be from different mesh
+    returns the created rivet name
+ 
+    name  : string > to define the rivet name
+    edgeA : string > the full edge name
+    edgeB : string > the full edge name
+    '''
+    ####  init
+    objA = edgeA.split('.')[0]
+    objB = edgeB.split('.')[0]
+     
+ 
+    #### Create Locator rivet
+    rivet = cmds.spaceLocator(name=name)[0]
+     
+    ####  Create nodes
+    nodes = []
+    nodes.append(cmds.createNode('curveFromMeshEdge', name=rivet + '_%s_Crv' %(objA)))        # 0
+    nodes.append(cmds.createNode('curveFromMeshEdge', name=rivet + '_%s_Crv' %(objB)))        # 1
+    nodes.append(cmds.createNode('loft', name=rivet + '_loft'))                               # 2
+    nodes.append(cmds.createNode('pointOnSurfaceInfo', name=rivet + 'pointOnSurfaceInfo'))    # 3
+    nodes.append(cmds.createNode('rotateHelper', name=rivet + '_rotateHelper'))               # 4
+    nodes.append(cmds.createNode('decomposeMatrix', name=rivet + '_decomposeMatrix'))         # 5
+     
+    #### Set Nodes Connections
+        ### Crv 1
+    cmds.setAttr(nodes[0] + '.ei[0]', int(re.findall('\d+', edgeA)[-1]))
+    cmds.connectAttr(objA + '.w', nodes[0] + '.im', force=True)
+     
+        ### Crv 2
+    cmds.setAttr(nodes[1] + '.ei[0]', int(re.findall('\d+', edgeB)[-1]))
+    cmds.connectAttr(objB + '.w', nodes[1] + '.im', force=True)
+     
+        ### Loft
+    cmds.setAttr(nodes[2] + '.ic', size=2)
+    cmds.setAttr(nodes[2] + '.u', True)
+    cmds.setAttr(nodes[2] + '.rsn', True)
+    cmds.connectAttr(nodes[0] + '.oc', nodes[2] + '.ic[0]', force=True) # Connect Crv 1 to Loft
+    cmds.connectAttr(nodes[1] + '.oc', nodes[2] + '.ic[1]', force=True) # Connect Crv 2 to Loft
+ 
+        ### Point on surface info
+    cmds.setAttr(nodes[3] + '.turnOnPercentage', True)
+    cmds.connectAttr(nodes[2] + '.os', nodes[3] + '.is', force=True) # Connect Loft to Point on Surface Info
+ 
+        ### Get Rotate
+    cmds.connectAttr(nodes[3] + '.normal', nodes[4] + '.up') # Connect PtsOnSurface normal to rotateHelper
+    cmds.connectAttr(nodes[3] + '.tangentV', nodes[4] + '.forward') # Connect PtsOnSurface tangentv to rotateHelper
+    cmds.connectAttr(nodes[4] + '.rotateMatrix', nodes[5] + '.inputMatrix') # Connect rotateHelper to decomposeMatrix
+ 
+    #### Drive Rivet
+    cmds.connectAttr(nodes[3] + '.positionX', rivet + '.translateX')
+    cmds.connectAttr(nodes[3] + '.positionY', rivet + '.translateY')
+    cmds.connectAttr( nodes[3] + '.positionZ', rivet + '.translateZ')
+     
+    cmds.connectAttr(nodes[5] + '.outputRotateX', rivet + '.rotateX')
+    cmds.connectAttr(nodes[5] + '.outputRotateY', rivet + '.rotateY')
+    cmds.connectAttr(nodes[5] + '.outputRotateZ', rivet + '.rotateZ')
+ 
+    #### Add Ctrl attributes to rivet
+    cmds.addAttr(rivet, longName='posU', attributeType='float', minValue=0.0, maxValue=1.0, defaultValue=0.5, keyable=True)
+    cmds.addAttr(rivet, longName='posV', attributeType='float', minValue=0.0, maxValue=1.0, defaultValue=0.5, keyable=True)
+     
+    cmds.connectAttr(rivet + '.posU', nodes[3] + '.parameterU', force=True)
+    cmds.connectAttr(rivet + '.posV', nodes[3] + '.parameterV', force=True)
+ 
+    #### Historical reset
+    for node in nodes:
+        cmds.setAttr(node + '.ihi', 0)
+     
+    cmds.setAttr(rivet + 'Shape.ihi', 0)
+ 
+    #### Clean
+    for attr in ['t', 'r', 's']:
+        for axis in ['x', 'y', 'z']:
+            cmds.setAttr('%s.%s%s' %(rivet, attr, axis), keyable=False)
+    for axis in ['X', 'Y', 'Z']:
+        cmds.setAttr('%sShape.localPosition%s' %(rivet, axis), keyable=False, channelBox=False)
+ 
+GS_rivet()
