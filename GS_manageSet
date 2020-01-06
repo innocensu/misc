@@ -1,0 +1,22 @@
+import maya.cmds as cmds
+
+def GS_manageSet(mode):
+    '''
+    Manage Set
+    Select object to manage and select last the set
+    '''
+    # Get Selection and filter
+    cSel = cmds.ls(selection=True)
+    set = cSel[-1]
+    # Test if set is a set
+    items = cSel[0:-1]
+    
+    if mode == 'REMOVE':
+        # Remove object from a set
+        cmds.sets(items, remove=set)
+    elif mode == 'ADD':
+        # Add to Set
+        cmds.sets(items, forceElement=set)
+
+GS_manageSet(mode='ADD')
+GS_manageSet(mode='REMOVE')
