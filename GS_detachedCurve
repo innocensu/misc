@@ -1,0 +1,57 @@
+from pymel.all import *
+import maya.cmds as cmds
+import pymel.core as pm
+import pymel.core.datatypes as dt
+ 
+def GS_detachedCurve():
+    '''
+    Select your curve first and after the nurbs surface and run the script
+    '''
+ 
+    object = []
+    newpos = dt.Vector()
+    cpoint = dt.Vector()
+    object = cmds.ls(flatten=True, selection=True)
+    cmds.createNode('closestPointOnSurface', name='projection_node')
+    cmds.connectAttr((object[1] + ".ws"), 'projection_node.is')
+    vert = dt.Vector()
+    dcu = dt.Vector()
+    mdcu = dt.Vector()
+    normal = dt.Vector()
+    uc = 0.0
+    vc = 0.0
+    beta = 0.0
+    u = float(0)
+    tol = 0.01
+    dis = 0.0
+    min = float(1000000)
+    p = 0.5
+    k = 0.5
+ 
+    while tol > 0.00000001:
+        while u < p+tol*100/2+tol:
+            dcu = dt.Vector(cmds.pointPosition((object[0] + ".un[" + str(u) + "]"), world=True))
+            cmds.setAttr("projection_node.ip", (dcu.x), (dcu.y), (dcu.z))
+            vert = dt.Vector(cmds.getAttr('projection_node.p'))
+            dis = float(pm.mel.mag(vert - dcu))
+            if dis < min:
+                min = dis
+                k = u
+         
+            u = u + tol
+             
+        u = p - tol*5
+        tol = tol/10
+        p = k
+ 
+ 
+    mdcu = dt.Vector(cmds.pointPosition((object[0] + ".un[" + str(p) + "]"), world=True))
+    cmds.setAttr("projection_node.ip", (mdcu.x), (mdcu.y), (mdcu.z))
+    uc = float(cmds.getAttr('projection_node.u'))
+    vc = float(cmds.getAttr('projection_node.v'))
+    cmds.select(object[0] + ".un[" + str(p) + "]")
+    cmds.detachCurve(replaceOriginal=True)
+    cmds.delete('projection_node')
+ 
+ 
+GS_detachedCurve()
