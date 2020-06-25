@@ -1,0 +1,74 @@
+This tool allows you to select corresponding faces between 2 objects.
+
+import maya.cmds as cmds
+import maya.mel as mel
+import maya.OpenMaya as om
+import scipy.spatial
+import sys
+ 
+def select_corresponding_faces( tolerance=10e-4, select=True ):
+ 
+  selection_mSelectionList = om.MSelectionList()
+  om.MGlobal.getActiveSelectionList( selection_mSelectionList )
+  mesh_1_mDagPath = om.MDagPath()
+  mesh_2_mDagPath = om.MDagPath()
+  meshComponents_1_mObject = om.MObject()
+  selection_mSelectionList.getDagPath( 0, mesh_1_mDagPath, meshComponents_1_mObject )
+  selection_mSelectionList.getDagPath( 1, mesh_2_mDagPath )
+   
+  mesh_2_centers_list = list()
+  mesh_2_mItMeshPolygon = om.MItMeshPolygon( mesh_2_mDagPath )
+   
+  correspondingIndices_mIntArray = om.MIntArray()
+ 
+  while not mesh_2_mItMeshPolygon.isDone():
+    center_mPoint = mesh_2_mItMeshPolygon.center( om.MSpace.kWorld )
+    mesh_2_centers_list.append( [ center_mPoint.x, center_mPoint.y, center_mPoint.z ] )
+    mesh_2_mItMeshPolygon.next()
+ 
+  sys.stdout.write( 'zivaUtils: building kdtree...' )
+  kdtree = scipy.spatial.KDTree( mesh_2_centers_list )
+  sys.stdout.write( '.. done \n')
+   
+  sys.stdout.write( 'zivaUtils: lo1oking up kdtree...' )
+  mesh_1_mItMeshPolygon = om.MItMeshPolygon( mesh_1_mDagPath, meshComponents_1_mObject  )
+  while not mesh_1_mItMeshPolygon.isDone(  ):
+    p = mesh_1_mItMeshPolygon.center(om.MSpace.kWorld)
+    returned = kdtree.query( [p.x, p.y, p.z] )
+    if returned[0] < tolerance:
+      correspondingIndices_mIntArray.append(int(returned[1]))
+     
+    mesh_1_mItMeshPolygon.next()
+   
+  sys.stdout.write( '.. done \n' )
+ 
+  if select:
+ 
+    vertices_mfnSIC = om.MFnSingleIndexedComponent()
+    components_mObject = vertices_mfnSIC.create( om.MFn.kMeshPolygonComponent )
+     
+    vertices_mfnSIC.addElements( correspondingIndices_mIntArray )
+     
+    newSelectionList = om.MSelectionList()
+    newSelectionList.add( mesh_2_mDagPath, components_mObject )
+     
+    om.MGlobal.setActiveSelectionList( newSelectionList ) 
+     
+  return mintarray_to_list( correspondingIndices_mIntArray )
+   
+def mintarray_to_list( mIntArray ):
+  '''
+  Will convert a list of integers to an MIntArray
+ 
+  args:
+    int_list - a list of ints
+ 
+  returns:
+    MIntArray object
+ 
+  '''
+  return_list = list()
+  for i in xrange( mIntArray.length() ):
+    return_list.append( mIntArray[i] )
+   
+  return return_list
