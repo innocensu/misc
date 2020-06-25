@@ -1,0 +1,64 @@
+import maya.cmds as cmds
+import maya.OpenMaya as OpenMaya
+ 
+ 
+def extractData(list):
+    list = list.replace(' ',' ')
+    buffer = list.split(':')
+    buffer = buffer[1][1:].split(' ')[:-1]
+     
+    return(buffer)
+ 
+def getPntPos(vtx, object):
+    if vtx == "": return
+    test = cmds.pointPosition((object + '.vtx[' + vtx + ']'), w=True)
+ 
+ 
+    return(test)
+ 
+select = cmds.ls( selection=True )
+select = select[0] #selection du point "bug" avec l'objet
+object = select.split('.')[0] #selection uniquement de l'objet (mesh)
+vtxtofix = select[select.find("[")+1:select.find("]")] #selection uniquement du point "bug"
+#creation d'une liste pour connaitre les faces qui sont relies a ce point
+myLists = (cmds.polyInfo( vf=True ))
+list = myLists[0]
+buffer = extractData(list)
+connectedFaces = []
+for list in buffer:
+    if list != '':
+        connectedFaces.append(int (list))
+ 
+cmds.select(cl=True) #deselection du point "bug"
+ 
+ 
+for c in connectedFaces:
+    cmds.select(object + '.f[' + str(c) + ']', add=True)
+ 
+ 
+#recuperation des coordonnees des points composants les faces et transformation en vecteur
+myIdxLists = (cmds.polyInfo( fv=True ))
+fvtx = []
+ 
+ 
+for idx in myIdxLists:
+    buffer = extractData(idx)
+    for b in buffer:
+        if vtxtofix == b:
+            continue
+        fvtx.append(b)
+ 
+finalpos = om.MVector(0,0,0)
+counter = 0
+ 
+ 
+for vx in dict().fromkeys(fvtx).keys(): #on supprime les doublons de points des faces selectionnes
+    pnt = getPntPos(vx, object)
+    if pnt == None: continue
+    mvec = om.MVector(pnt[0],pnt[1],pnt[2])
+    finalpos += mvec
+    counter += 1
+ 
+finalpos /= counter #average des vecteurs pour trouver les coordonnees du point "fix"
+cmds.select(object + '.vtx[' + vtxtofix + ']') #on revient selectionner le point "bug"
+cmds.move(finalpos[0], finalpos[1], finalpos[2], absolute=True) #on deplace le point initial sur le point "fix"
