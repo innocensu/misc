@@ -1,0 +1,32 @@
+import maya.cmds as cmds
+ 
+ 
+def skinAs(sel):
+    if len(sel) < 2:
+        cmds.warning('Bad selection')
+     
+    sc = cmds.listHistory(sel[0])
+    skin = cmds.ls(sc, et='skinCluster')
+    infList = cmds.skinCluster(sel[0], q=True, inf=True)
+    jointList = cmds.ls(infList, et='joint')
+    xformList = cmds.ls(infList, et='transform')
+     
+    maxInf = cmds.getAttr(skin[0] + '.mi')
+    if maxInf < 5:
+        cmds.setAttr(skin[0] + '.mi', 5)
+     
+    # New skin
+ 
+    for i in sel:
+        if not i == sel[0]:
+            hasSkin = cmds.ls(cmds.listHistory(i), et='skinCluster')
+            if hasSkin != 0:
+                cmds.warning('%s already has a skinCluster'%i)
+             
+            newSc = cmds.skinCluster(jointList, i, mi=maxInf, omi=1, tsb=True, n=i + '_skinCluster')
+            cmds.copySkinWeights(sel[0], i, noMirror=True, surfaceAssociation='closestPoint', influenceAssociation=('oneToOne','closestJoint'))
+     
+    cmds.select(sel)
+ 
+sel = cmds.ls(sl=True)
+skinAs(sel)
