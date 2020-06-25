@@ -1,0 +1,48 @@
+This tool allows you to create a curve positioned perfectly in the center of the object (based on vertices math). (Really useful to ropes system for example)
+
+import maya.cmds as cmds
+import re
+ 
+def GS_createCurve():
+    '''
+    First select 2 vertices ends on an edge and run the script
+    '''
+ 
+    instances_sel = []
+    sel = cmds.ls(orderedSelection=True, flatten=True)
+    object = sel[0].split(".")[0]
+    start_id = int(sel[0].rpartition("[")[2].rpartition("]")[0])
+    instances_sel.extend([object+".e[%s]"%x for x in cmds.polySelect(object, edgeRing=start_id )])
+ 
+    #### Create curve from selection
+    #### Convert edge loop to vertices
+    point_position_list = []
+    for instance_sel in instances_sel:
+        index = instance_sel.split(".")[1]
+        num = int(re.findall('\d+', index)[0])
+ 
+        if ".e" in instance_sel:
+            cmds.polySelect(object, edgeLoopOrBorder=num)
+            cmds.ConvertSelectionToVertices()
+            vtx_sel = cmds.ls(selection=True, flatten=True)
+  
+            ### Getting all the center locators
+            px = 0
+            py = 0
+            pz = 0
+ 
+            for vtx in vtx_sel:
+                pos = cmds.xform(vtx, query=True, worldSpace=True, translation=True)
+                px += pos[0]
+                py += pos[1]
+                pz += pos[2]
+  
+            ### Averaging all the positions and getting the center of the vertices
+            centerPos = [px/len(vtx_sel), py/len(vtx_sel), pz/len(vtx_sel)]
+            point_position_list.append(centerPos)
+ 
+    #### Creating final curve
+    crv = cmds.curve(point=point_position_list, name='crv', degree=1)
+ 
+ 
+GS_createCurve()
