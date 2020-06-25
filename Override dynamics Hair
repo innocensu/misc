@@ -1,0 +1,723 @@
+import maya.cmds as mc
+import random as rand
+import maya.mel as mel
+ 
+givenNamespace = ''
+givenNameGroom = ''
+chosenCharacter = ''
+ 
+charInScene = ['']
+ 
+amountFollicles = 0
+overwriteAmount = 0
+amountFolliclesList = []
+randomList = []
+ 
+startCRVAttractHairSys = 0.0
+attractDampHairSys = 0.0
+ 
+stiffnessMinMin = 0
+stiffnessMinMax = 0
+stiffnessMaxMin = 0
+stiffnessMaxMax = 0
+ 
+ 
+#------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------amountOfFollicles(getExist)
+def amountOfFollicles(noExist):
+    global givenNamespace
+    global givenNameGroom
+    global chosenCharacter
+    global charInScene
+    global amountFollicles
+    global amountFolliclesList
+    global startCRVAttractHairSys
+    global attractDampHairSys
+     
+    #get namespace, select all follicles and set count
+    givenNamespace = mc.textField('nameSpaceFld', q = True, tx = True)
+    givenNameGroom = mc.textField('nameGroomFld', q = True, tx = True)
+     
+    #get name of character
+    if noExist == 1:
+        hairsystemPath = mc.listRelatives(givenNamespace + givenNameGroom + '_furballSystem_hairsys', fullPath = True)
+        hairsystemPathSplit = hairsystemPath[0].split('|')
+        characterNameSplit = hairsystemPathSplit[3].split('_')
+        chosenCharacter = characterNameSplit[0]
+     
+    if not chosenCharacter in charInScene:
+        charInScene.append(chosenCharacter)
+     
+    mc.select(givenNamespace + givenNameGroom + '_follicle_*')
+    amountFolliclesList = mc.ls(sl = True)
+    mc.select(cl = True)
+     
+    amountFollicles = len(amountFolliclesList)
+     
+    mc.textField('amountFollicelsFld', e = True, text = amountFollicles)
+     
+    #get values from hair system and set them for the overwrites
+    startCRVAttractHairSys = mc.getAttr(givenNamespace + givenNameGroom + '_furballSystem_hairsysShape.startCurveAttract')
+     
+    if noExist == 1:
+        mc.textField(startCrvAttractFldMin, e = True, tx = str(startCRVAttractHairSys))
+        mc.floatSlider(startCrvAttractFldSliderMin, e = True, v = float(startCRVAttractHairSys))
+        mc.textField(startCrvAttractFldMax, e = True, tx = str(startCRVAttractHairSys))
+        mc.floatSlider(startCrvAttractFldSliderMax, e = True, v = float(startCRVAttractHairSys))
+         
+        stiffnessMinMin = mc.getAttr(givenNamespace + givenNameGroom + '_furballSystem_hairsysShape.stiffnessScale[0].stiffnessScale_FloatValue')
+        stiffnessMinMax = mc.getAttr(givenNamespace + givenNameGroom + '_furballSystem_hairsysShape.stiffnessScale[1].stiffnessScale_FloatValue')
+        stiffnessMaxMin = mc.getAttr(givenNamespace + givenNameGroom + '_furballSystem_hairsysShape.stiffnessScale[0].stiffnessScale_FloatValue')
+        stiffnessMaxMax = mc.getAttr(givenNamespace + givenNameGroom + '_furballSystem_hairsysShape.stiffnessScale[1].stiffnessScale_FloatValue')
+         
+        attractionMinMin = mc.getAttr(givenNamespace + givenNameGroom + '_furballSystem_hairsysShape.attractionScale[0].attractionScale_FloatValue')
+        attractionMinMax = mc.getAttr(givenNamespace + givenNameGroom + '_furballSystem_hairsysShape.attractionScale[1].attractionScale_FloatValue')
+        attractionMaxMin = mc.getAttr(givenNamespace + givenNameGroom + '_furballSystem_hairsysShape.attractionScale[0].attractionScale_FloatValue')
+        attractionMaxMax = mc.getAttr(givenNamespace + givenNameGroom + '_furballSystem_hairsysShape.attractionScale[1].attractionScale_FloatValue')
+         
+    else:       
+        stiffnessMinMin = mc.getAttr(chosenCharacter + '_overrideDynUISettings_LOC.stiffnessMinRampMax')
+        stiffnessMinMax = mc.getAttr(chosenCharacter + '_overrideDynUISettings_LOC.stiffnessMinRampMin')
+        stiffnessMaxMin = mc.getAttr(chosenCharacter + '_overrideDynUISettings_LOC.stiffnessMaxRampMax')
+        stiffnessMaxMax = mc.getAttr(chosenCharacter + '_overrideDynUISettings_LOC.stiffnessMaxRampMin')
+         
+        attractionMinMin = mc.getAttr(chosenCharacter + '_overrideDynUISettings_LOC.attractionMinRampMax')
+        attractionMinMax = mc.getAttr(chosenCharacter + '_overrideDynUISettings_LOC.attractionMinRampMin')
+        attractionMaxMin = mc.getAttr(chosenCharacter + '_overrideDynUISettings_LOC.attractionMaxRampMax')
+        attractionMaxMax = mc.getAttr(chosenCharacter + '_overrideDynUISettings_LOC.attractionMaxRampMin')
+     
+    mc.optionVar(ca = 'stiffnessMin')
+    mc.optionVar(stringValueAppend = ['stiffnessMin', str(stiffnessMinMax) + ',1,2'])
+    mc.optionVar(stringValueAppend = ['stiffnessMin', str(stiffnessMinMin) + ',0,2'])
+    mc.gradientControlNoAttr('stiffnessRampMin', e = True, optionVar = 'stiffnessMin' )
+     
+    mc.floatField('stiffnessMinMinFltFld', e = True, v = stiffnessMinMin)
+    mc.floatField('stiffnessMinMaxFltFld', e = True, v = stiffnessMinMax)
+     
+    mc.optionVar(ca = 'stiffnessMax')
+    mc.optionVar(stringValueAppend = ['stiffnessMax', str(stiffnessMaxMax) + ',1,2'])
+    mc.optionVar(stringValueAppend = ['stiffnessMax', str(stiffnessMaxMin) + ',0,2'])
+    mc.gradientControlNoAttr('stiffnessRampMax', e = True, optionVar = 'stiffnessMax' )
+     
+    mc.floatField('stiffnessMaxMinFltFld', e = True, v = stiffnessMaxMin)
+    mc.floatField('stiffnessMaxMaxFltFld', e = True, v = stiffnessMaxMax)
+     
+    mc.optionVar(ca = 'attractionMin')
+    mc.optionVar(stringValueAppend = ['attractionMin', str(attractionMinMax) + ',1,2'])
+    mc.optionVar(stringValueAppend = ['attractionMin', str(attractionMinMin) + ',0,2'])
+    mc.gradientControlNoAttr('attractionRampMin', e = True, optionVar = 'attractionMin' )
+     
+    mc.floatField('attractionMinMinFltFld', e = True, v = attractionMinMin)
+    mc.floatField('attractionMinMaxFltFld', e = True, v = attractionMinMax)
+     
+    mc.optionVar(ca = 'attractionMax')
+    mc.optionVar(stringValueAppend = ['attractionMax', str(attractionMaxMax) + ',1,2'])
+    mc.optionVar(stringValueAppend = ['attractionMax', str(attractionMaxMin) + ',0,2'])
+    mc.gradientControlNoAttr('attractionRampMax', e = True, optionVar = 'attractionMax' )
+     
+    mc.floatField('attractionMaxMinFltFld', e = True, v = attractionMaxMin)
+    mc.floatField('attractionMaxMaxFltFld', e = True, v = attractionMaxMax)
+     
+    #enable override settings, if settings exists don't enable override button
+    mc.frameLayout('dynamicOverrides', e = True, cl = False, en = True)
+    mc.button('disableOverrideBtn', e = True, en = True)
+    mc.button('overrideBtn', e = True, en = noExist)
+ 
+#------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------overrideDynamics()
+def overrideDynamics(update):
+    global givenNamespace
+    global givenNameGroom
+    global chosenCharacter
+    global overwriteAmount
+    global amountFollicles
+    global amountFolliclesList
+    global randomList
+     
+    tempValue = 0
+    overwriteAmount = 0
+    givenOverwriteAmount = ''
+     
+    #get amount of follicles to be overwritten
+    givenOverwriteAmount = mc.textField('amountOverwrittenFld', q = True, tx = True)
+     
+    #check if it's % or number and continue
+    if '%' in givenOverwriteAmount:
+        tempValue = float(givenOverwriteAmount[0:len(givenOverwriteAmount)-1])
+        overwriteAmount = int((amountFollicles / 100) * tempValue)   
+    else:
+        overwriteAmount = int(givenOverwriteAmount)
+ 
+    #append # random numbers to a list
+    #value between 0 and amount of follicles
+    rand.shuffle(amountFolliclesList)
+     
+    if update == 0: 
+        randomList = []
+               
+        for i in range(0, overwriteAmount):
+            randomList.append(amountFolliclesList[i])
+ 
+    #Assign override valuesfrom UI
+    lengthFlexOverrideMin = float(mc.textField('lengthFlexFldMin', q = True, tx = True))
+    lengthFlexOverrideMax = float(mc.textField('lengthFlexFldMax', q = True, tx = True))
+     
+    dampOverrideMin = float(mc.textField('dampFldMin', q = True, tx = True))
+    dampOverrideMax = float(mc.textField('dampFldMax', q = True, tx = True))
+     
+    stiffnessOverrideMin = float(mc.textField('stiffnessFldMin', q = True, tx = True))
+    stiffnessOverrideMax = float(mc.textField('stiffnessFldMax', q = True, tx = True))
+     
+    startCRVAttrOverrideMin = float(mc.textField('startCrvAttractFldMin', q = True, tx = True))
+    startCRVAttrOverrideMax = float(mc.textField('startCrvAttractFldMax', q = True, tx = True))
+     
+    attractDampOverrideMin = float(mc.textField('attractionDampFldMin', q = True, tx = True))
+    attractDampOverrideMax = float(mc.textField('attractionDampFldMax', q = True, tx = True))
+     
+    #get values from ramp and set floatfields
+    stiffnessRampMinValues = getValuesFromRamp('stiffnessRampMin')
+    stiffnessRampMaxValues = getValuesFromRamp('stiffnessRampMax')
+     
+    attractionRampMinValues = getValuesFromRamp('attractionRampMin')
+    attractionRampMaxValues = getValuesFromRamp('attractionRampMax')
+     
+    #create locator and save settings on it in the form of attributes
+    locNewAttrNamesList = ['lengthFlexOverrideMin', 'lengthFlexOverrideMax', 'dampOverrideMin', 'dampOverrideMax', 'stiffnessOverrideMin', 'stiffnessOverrideMax',\
+    'stiffnessMinRampMin', 'stiffnessMinRampMax', 'stiffnessMaxRampMin', 'stiffnessMaxRampMax', 'startCRVAttrOverrideMin', 'startCRVAttrOverrideMax',\
+    'attractDampOverrideMin', 'attractDampOverrideMax', 'attractionMinRampMin', 'attractionMinRampMax', 'attractionMaxRampMin', 'attractionMaxRampMax']
+     
+    locNewAttrValueList = [lengthFlexOverrideMin, lengthFlexOverrideMax, dampOverrideMin, dampOverrideMax, stiffnessOverrideMin, stiffnessOverrideMax,\
+    stiffnessRampMinValues[0], stiffnessRampMinValues[3], stiffnessRampMaxValues[0], stiffnessRampMaxValues[3], startCRVAttrOverrideMin, startCRVAttrOverrideMax,\
+    attractDampOverrideMin, attractDampOverrideMax, attractionRampMinValues[0], attractionRampMinValues[3], attractionRampMaxValues[0], attractionRampMinValues[3]]
+     
+    if mc.objExists(chosenCharacter + '_overrideDynUISettings_LOC') == False:
+        mc.spaceLocator(n = chosenCharacter + '_overrideDynUISettings_LOC')
+        mc.spaceLocator(n = chosenCharacter + '_givenNamespace_' + givenNamespace[:len(givenNamespace)-1] + '_LOC')
+        mc.spaceLocator(n = chosenCharacter + '_givenNameGroom_' + givenNameGroom + '_LOC')
+        mc.group(chosenCharacter + '_overrideDynUISettings_LOC', chosenCharacter + '_givenNamespace_' + givenNamespace[:len(givenNamespace)-1] + '_LOC', chosenCharacter + '_givenNameGroom_' + givenNameGroom + '_LOC', n = chosenCharacter + '_overrideDynUISettings_GRP')
+        mc.select(cl = True)
+         
+        #get all keyable attributes, loc and hide
+        #hide grp in scene
+        locAttr = mc.listAttr(chosenCharacter + '_overrideDynUISettings_LOC', k = True)
+        mc.setAttr(chosenCharacter + '_overrideDynUISettings_GRP.visibility', 0)
+         
+        for i in range(0, len(locAttr)):
+            mc.setAttr(chosenCharacter + '_overrideDynUISettings_LOC.' + locAttr[i], lock = True, keyable = False, channelBox = False)
+            
+        #add ui settings to the locator
+        for i in range(0, len(locNewAttrNamesList)):
+            mc.addAttr(chosenCharacter + '_overrideDynUISettings_LOC', ln = locNewAttrNamesList[i], at = 'double')
+         
+        #add follicle numbers as enum attr to LOC 
+        follicleNumbers = []
+        for i in range(0,len(randomList)):
+            tempList = (randomList[i].split(':'))
+            follicleNumbers.append(tempList[1])
+                             
+        randomListToEnum = ':'.join(follicleNumbers)
+        mc.addAttr(chosenCharacter + '_overrideDynUISettings_LOC', ln = 'overwrittenFollicles', at = 'enum', en = str(randomListToEnum))
+        mc.addAttr(chosenCharacter + '_overrideDynUISettings_LOC', ln = 'givenOverwriteAmount', at = 'enum', en = givenOverwriteAmount)
+     
+    #update values on locator when overrides are being updated             
+    for i in range(0, len(locNewAttrNamesList)):
+        mc.setAttr(chosenCharacter + '_overrideDynUISettings_LOC.' + locNewAttrNamesList[i], float(locNewAttrValueList[i]), lock = False, keyable = True, channelBox = True)    
+     
+    for i in range(0, len(randomList)):
+        mc.setAttr(randomList[i] + '.overrideDynamics', 1)
+         
+        lengthFlexOverrideOut = rand.uniform(lengthFlexOverrideMin,lengthFlexOverrideMax)
+        dampOverrideOut = rand.uniform(dampOverrideMin,dampOverrideMax)
+        stiffnessOverrideOut = rand.uniform(stiffnessOverrideMin,stiffnessOverrideMax)
+        startCRVAttrOverrideOut = rand.uniform(startCRVAttrOverrideMin,startCRVAttrOverrideMax)
+        attractDampOverrideOut = rand.uniform(attractDampOverrideMin,attractDampOverrideMax)
+         
+        mc.setAttr(randomList[i] + '.lengthFlex', lengthFlexOverrideOut)
+        mc.setAttr(randomList[i] + '.damp', dampOverrideOut)
+        mc.setAttr(randomList[i] + '.stiffness', stiffnessOverrideOut)
+        mc.setAttr(randomList[i] + '.startCurveAttract', startCRVAttrOverrideOut)
+        mc.setAttr(randomList[i] + '.attractionDamp', attractDampOverrideOut)
+         
+        stiffnessRoot = rand.uniform(float(stiffnessRampMinValues[3]),float(stiffnessRampMaxValues[3]))
+        stiffnessTip = rand.uniform(float(stiffnessRampMinValues[0]),float(stiffnessRampMaxValues[0]))
+         
+        mc.setAttr(randomList[i] + '.stiffnessScale[0].stiffnessScale_FloatValue', stiffnessRoot)
+        mc.setAttr(randomList[i] + '.stiffnessScale[1].stiffnessScale_FloatValue', stiffnessTip)
+         
+        attractionRoot = rand.uniform(float(attractionRampMinValues[3]),float(attractionRampMaxValues[3]))
+        attractionTip = rand.uniform(float(attractionRampMinValues[0]),float(attractionRampMaxValues[0]))
+         
+        mc.setAttr(randomList[i] + '.attractionScale[0].attractionScale_FloatValue', attractionRoot)
+        mc.setAttr(randomList[i] + '.attractionScale[1].attractionScale_FloatValue', attractionTip)
+         
+    print randomList
+         
+    #enable/disable override settings
+    mc.button('updateOverrideBtn', e = True, en = True)
+    mc.button('overrideBtn', e = True, en = False)
+    mc.button('affectedCurvesBtn', e = True, en = True)
+    mc.textField('amountOverwrittenFld', e = True, en = False)
+     
+    if update == 0:
+        mel.eval('print "Dynamics overwritten"')
+    else:
+        mel.eval('print "Dynamics updated"')
+     
+#------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------disableOverride()   
+def getValuesFromRamp(ramp):
+    rampValuesString = mc.gradientControlNoAttr(ramp, q = True, asString = True)
+    rampValuesList = rampValuesString.split(',')
+     
+    return rampValuesList
+    
+#------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------disableOverride()
+def disableOverride():
+    global randomList
+    global amountFollicles
+    global givenNamespace
+    global givenNameGroom
+    global chosenCharacter
+ 
+    for i in range(0, amountFollicles):
+        mc.setAttr(givenNamespace + givenNameGroom + '_follicle_' + str(i) + '.overrideDynamics', 0)
+        mc.setAttr(givenNamespace + givenNameGroom + '_follicle_' + str(i) + '.colorBlend', 0)
+        mc.setAttr(givenNamespace + givenNameGroom + '_follicle_' + str(i) + '.colorB', 0)
+         
+    mc.button('affectedCurvesBtn', e = True, bgc = [0.35,0.35,0.35], label = 'Show affected curves')
+         
+    randomList = []
+     
+    #enable/disable override settings
+    mc.button('overrideBtn', e = True, en = True)
+    mc.button('updateOverrideBtn', e = True, en = False)
+    mc.textField('amountOverwrittenFld', e = True, en = True)
+    mc.button('affectedCurvesBtn', e = True, en = False)
+     
+    #delete UI saving locators
+    if mc.objExists(chosenCharacter + '_overrideDynUISettings_LOC'):
+        mc.delete(chosenCharacter + '_overrideDynUISettings_GRP')
+         
+    mel.eval('print "Dynamic overrides disabled"')
+         
+#------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------updateSliderField()
+def updateSliderField(fldName, SliderName):
+    sliderValue = round(mc.floatSlider(SliderName, q = True, v = True), 3)
+    mc.textField(fldName, e = True, tx = str(sliderValue))
+ 
+#------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------updateSlider()  
+def updateSlider(fldName, SliderName, updateMax):
+    fldValue = mc.textField(fldName, q = True, tx = True)
+     
+    mc.floatSlider(SliderName, e = True, v = float(fldValue))
+ 
+#------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------updateRamps()  
+def updateRamps(ramp, floatFld):
+    #get values from ramp and set floatfields
+    rampValuesString = mc.gradientControlNoAttr(ramp, q = True, asString = True)
+    rampValuesList = rampValuesString.split(',')
+     
+    mc.floatField(floatFld + 'MinFltFld', e = True, v = float(rampValuesList[3]))
+    mc.floatField(floatFld + 'MaxFltFld', e = True, v = float(rampValuesList[0]))
+ 
+#------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------selectNames()  
+def selectNames(kind):
+    selectionList = mc.ls(sl = True)
+    splitSelection = selectionList[0].split(':')
+     
+    splitForGroom = splitSelection[1].split('_')
+       
+    if kind == 'nameSpace':
+        mc.textField('nameSpaceFld', e = True, tx = splitSelection[0] + ':')
+    if kind == 'groom':
+        mc.textField('nameGroomFld', e = True, tx = splitForGroom[0])
+        checkIfSetLOCExist()
+ 
+#------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------resetScript()
+def resetScript():
+    global givenNamespace
+    global givenNameGroom
+    global charInScene
+    global amountFollicles
+    global overwriteAmount
+    global amountFolliclesList
+    global startCRVAttractHairSys
+    global attractDampHairSys
+    global randomList
+     
+    for i in range(0, amountFollicles):
+        mc.setAttr(givenNamespace + givenNameGroom + '_follicle_' + str(i) + '.colorBlend', 0)
+        mc.setAttr(givenNamespace + givenNameGroom + '_follicle_' + str(i) + '.colorB', 0)
+     
+    #enable override settings
+    mc.frameLayout('dynamicOverrides', e = True, cl = True, en = False)
+    mc.button('disableOverrideBtn', e = True, en = False)
+    mc.button('overrideBtn', e = True, en = False)
+    mc.button('updateOverrideBtn', e = True, en = False)
+    mc.button('affectedCurvesBtn', e = True, en = False, bgc = [0.35,0.35,0.35], label = 'Show affected curves')
+     
+    mc.textField('nameSpaceFld', e = True, tx = 'character01example01body01:')
+    mc.textField('nameGroomFld', e = True, tx = 'Select hairsystem/Replace with groom name')
+    mc.textField('amountFollicelsFld', e = True, tx = '')
+    mc.textField('amountOverwrittenFld', e = True, tx = '10% or 100 (example)', en = True)
+     
+    mc.textField('lengthFlexFldMin', e = True, tx = '0.000')
+    mc.floatSlider('lengthFlexFldSliderMin', e = True, value = 0)
+    mc.textField('lengthFlexFldMax', e = True, tx = '0.000')
+    mc.floatSlider('lengthFlexFldSliderMax', e = True, value = 0)
+    mc.textField('dampFldMin', e = True, tx = '0.000')
+    mc.floatSlider('dampFldSliderMin', e = True, value = 0)
+    mc.textField('dampFldMax', e = True, tx = '0.000')
+    mc.floatSlider('dampFldSliderMax', e = True, value = 0)
+    mc.textField('stiffnessFldMin', e = True, tx = '0.150')
+    mc.floatSlider('stiffnessFldSliderMin', e = True, value = 0.150)
+    mc.textField('stiffnessFldMax', e = True, tx = '0.150')
+    mc.floatSlider('stiffnessFldSliderMax', e = True, value = 0.150)
+     
+    mc.textField('startCrvAttractFldMin', e = True, tx = '0.000')
+    mc.floatSlider('startCrvAttractFldSliderMin', e = True, value = 0)
+    mc.textField('startCrvAttractFldMax', e = True, tx = '0.000')
+    mc.floatSlider('startCrvAttractFldSliderMax', e = True, value = 0)
+    mc.textField('attractionDampFldMin', e = True, tx = '0.000')
+    mc.floatSlider('attractionDampFldSliderMin', e = True, value = 0)
+    mc.textField('attractionDampFldMax', e = True, tx = '0.000')
+    mc.floatSlider('attractionDampFldSliderMax', e = True, value = 0)
+     
+    givenNamespace = ''
+    givenNameGroom = ''
+    amountFollicles = 0
+    overwriteAmount = 0
+    amountFolliclesList = []
+    startCRVAttractHairSys = 0.0
+    attractDampHairSys = 0.0
+    randomList = []
+     
+    if mc.objExists('*_overrideDynUISettings_LOC'):
+        mc.select('*_overrideDynUISettings_LOC')
+        existingSettingsInScene = mc.ls(sl = True)
+         
+        charInScene = ['']
+ 
+        for i in range(0, len (existingSettingsInScene)):
+            tempSplitList = existingSettingsInScene[i].split('_')
+            charInScene.append(tempSplitList[0])
+     
+    if mc.optionMenu(currentChar, q = True, e = False):
+        mc.optionMenu(currentChar, e = True, v = '')
+    mel.eval('print "Script reset"')
+ 
+#------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------affectedCurves()
+def affectedCurves():
+    global randomList
+    global amountFollicles
+    global givenNamespace
+    global givenNameGroom
+     
+    if mc.button('affectedCurvesBtn', q = True, bgc = True) != [1,0,0]:
+        mc.button('affectedCurvesBtn', e = True, bgc = [1,0,0], label = 'REVERT AFFECTED CURVES TO NORMAL!')
+         
+        for i in range(0, len(randomList)):
+            mc.setAttr(randomList[i] + '.colorBlend', 1)
+            mc.setAttr(randomList[i] + '.colorB', 1)
+    else:
+        mc.button('affectedCurvesBtn', e = True, bgc = [0.35,0.35,0.35], label = 'Show affected curves')
+         
+        for i in range(0, amountFollicles):
+            mc.setAttr(givenNamespace + givenNameGroom + '_follicle_' + str(i) + '.colorBlend', 0)
+            mc.setAttr(givenNamespace + givenNameGroom + '_follicle_' + str(i) + '.colorB', 0)
+ 
+#------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------loadExist()           
+def loadExist(name):
+    global randomList
+    global givenNamespace
+    global givenNameGroom
+    global chosenCharacter
+     
+    chosenCharacter = name
+     
+    #if _LOC exists read values and apply!, else give warning
+    if mc.objExists(chosenCharacter + '_overrideDynUISettings_LOC'):       
+        mc.button('updateOverrideBtn', e = True, en = True)
+        mc.button('overrideBtn', e = True, en = False)
+        mc.button('affectedCurvesBtn', e = True, en = True)
+        mc.textField('amountOverwrittenFld', e = True, en = False)
+         
+        #fill UI with values from the LOC, then run the function
+        namesLOCList = []
+                 
+        mc.select(chosenCharacter + '_givenName*_LOC')
+        uiLocList = mc.ls(sl = True)
+        mc.select(cl = True)
+         
+        for i in range(0, len(uiLocList)):
+            tempList = uiLocList[i].split('_')
+            namesLOCList.append(tempList[2])
+                     
+        givenNamespace = namesLOCList[1] + ':'
+        mc.textField('nameSpaceFld', e = True, tx = namesLOCList[1] + ':')
+        givenNameGroom = namesLOCList[0]
+        mc.textField('nameGroomFld', e = True, tx = namesLOCList[0])
+     
+        givenOverwriteAmountValue = mc.attributeQuery('givenOverwriteAmount', node = chosenCharacter + '_overrideDynUISettings_LOC', le = True)  
+        mc.textField('amountOverwrittenFld', e = True, tx = str(givenOverwriteAmountValue[0]))
+            
+        mc.textField('lengthFlexFldMin', e = True, tx = str(mc.getAttr(chosenCharacter + '_overrideDynUISettings_LOC.lengthFlexOverrideMin')))
+        mc.floatSlider('lengthFlexFldSliderMin', e = True, value = mc.getAttr(chosenCharacter + '_overrideDynUISettings_LOC.lengthFlexOverrideMin'))
+        mc.textField('lengthFlexFldMax', e = True, tx = str(mc.getAttr(chosenCharacter + '_overrideDynUISettings_LOC.lengthFlexOverrideMax')))
+        mc.floatSlider('lengthFlexFldSliderMax', e = True, value = mc.getAttr(chosenCharacter + '_overrideDynUISettings_LOC.lengthFlexOverrideMax'))
+        mc.textField('dampFldMin', e = True, tx = str(mc.getAttr(chosenCharacter + '_overrideDynUISettings_LOC.dampOverrideMin')))
+        mc.floatSlider('dampFldSliderMin', e = True, value = mc.getAttr(chosenCharacter + '_overrideDynUISettings_LOC.dampOverrideMin'))
+        mc.textField('dampFldMax', e = True, tx = str(mc.getAttr(chosenCharacter + '_overrideDynUISettings_LOC.dampOverrideMax')))
+        mc.floatSlider('dampFldSliderMax', e = True, value = mc.getAttr(chosenCharacter + '_overrideDynUISettings_LOC.dampOverrideMax'))
+        mc.textField('stiffnessFldMin', e = True, tx = str(mc.getAttr(chosenCharacter + '_overrideDynUISettings_LOC.stiffnessOverrideMin')))
+        mc.floatSlider('stiffnessFldSliderMin', e = True, value = mc.getAttr(chosenCharacter + '_overrideDynUISettings_LOC.stiffnessOverrideMin'))
+        mc.textField('stiffnessFldMax', e = True, tx = str(mc.getAttr(chosenCharacter + '_overrideDynUISettings_LOC.stiffnessOverrideMax')))
+        mc.floatSlider('stiffnessFldSliderMax', e = True, value = mc.getAttr(chosenCharacter + '_overrideDynUISettings_LOC.stiffnessOverrideMax'))
+    
+        mc.textField('startCrvAttractFldMin', e = True, tx = str(mc.getAttr(chosenCharacter + '_overrideDynUISettings_LOC.startCRVAttrOverrideMin')))
+        mc.floatSlider('startCrvAttractFldSliderMin', e = True, value = mc.getAttr(chosenCharacter + '_overrideDynUISettings_LOC.startCRVAttrOverrideMin'))
+        mc.textField('startCrvAttractFldMax', e = True, tx = str(mc.getAttr(chosenCharacter + '_overrideDynUISettings_LOC.startCRVAttrOverrideMax')))
+        mc.floatSlider('startCrvAttractFldSliderMax', e = True, value = mc.getAttr(chosenCharacter + '_overrideDynUISettings_LOC.startCRVAttrOverrideMax'))
+         
+        mc.textField('attractionDampFldMin', e = True, tx = str(mc.getAttr(chosenCharacter + '_overrideDynUISettings_LOC.attractDampOverrideMin')))
+        mc.floatSlider('attractionDampFldSliderMin', e = True, value = mc.getAttr(chosenCharacter + '_overrideDynUISettings_LOC.attractDampOverrideMin'))
+        mc.textField('attractionDampFldMax', e = True, tx = str(mc.getAttr(chosenCharacter + '_overrideDynUISettings_LOC.attractDampOverrideMax')))
+        mc.floatSlider('attractionDampFldSliderMax', e = True, value = mc.getAttr(chosenCharacter + '_overrideDynUISettings_LOC.attractDampOverrideMax'))
+ 
+        tempList = mc.attributeQuery('overwrittenFollicles', node = chosenCharacter + '_overrideDynUISettings_LOC', le = True)
+        tempSplitList = tempList[0].split(':')
+ 
+        for i in range(0, len(tempSplitList)):
+            randomList.append(givenNamespace + tempSplitList[i])
+         
+        amountOfFollicles(0)
+         
+        mel.eval('print "Existing settings loaded"')
+    else:
+        mc.warning('''No existing settings available. Check your scene for 'overrideDynUISettings_LOC'. This locator contains previously saved settings.
+it's hidden in scene but can be found in the 'overrideDynUISettings_GRP'.''')
+ 
+#------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------checkIfSetLOCExist()
+def checkIfSetLOCExist():
+    global chosenCharacter
+    global givenNamespace
+    global givenNameGroom
+    global charInScene
+     
+    givenNamespace = mc.textField('nameSpaceFld', q = True, tx = True)
+    givenNameGroom = mc.textField('nameGroomFld', q = True, tx = True)
+     
+    #get name of character
+    hairsystemPath = mc.listRelatives(givenNamespace + givenNameGroom + '_furballSystem_hairsys', fullPath = True)
+    hairsystemPathSplit = hairsystemPath[0].split('|')
+    characterNameSplit = hairsystemPathSplit[3].split('_')
+    chosenCharacter = characterNameSplit[0]
+     
+    #if loc exist give optionbox to choose to load existing settings or to continue
+    if mc.objExists(chosenCharacter + '_overrideDynUISettings_GRP'):
+        chosenOption = mc.confirmDialog( title='Previous override settings exist', message='Previously made settings fot this character exist. Do you want to load the existing settings or create new settings?',\
+        button=['Load existing settings','Create new settings'], defaultButton='Load existing settings', cancelButton='Create new settings')
+      
+        if chosenOption == 'Load existing settings':
+            loadExist(chosenCharacter)
+        else:
+            mc.delete(chosenCharacter + '_overrideDynUISettings_GRP')
+             
+            for i in range(0, len(charInScene)):
+                if charInScene[i] == chosenCharacter:
+                    charInScene.remove(charInScene[i])
+             
+            addMenuItem()
+            amountOfFollicles(1)
+    else:
+        amountOfFollicles(1)
+ 
+#------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------addMenuItem()      
+def addMenuItem():
+    global charInScene
+     
+    #if there are already items in the list, delete and recreate!
+    menuItems = mc.optionMenu(currentChar, q = True, itemListLong = True)
+    if menuItems:
+        cmds.deleteUI(menuItems)
+     
+    for i in range(0, len(charInScene)):
+        mc.menuItem(currentChar, label = charInScene[i])
+ 
+#------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------UI
+windowID = 'overrideDynamicsUI'
+ 
+#Set windowID and close UI if exists
+if mc.window(windowID, q = True, exists = True):
+    mc.deleteUI(windowID, window = True)
+ 
+overrideDynamicsUI = mc.window(windowID, title = 'Override Dynamics', rtf = True)
+ 
+#UI setup
+mc.rowColumnLayout(numberOfColumns = 1)
+ 
+mc.text(label = 'Load Existing Settings', align = 'center')
+mc.separator(style = 'double')
+mc.separator(style = 'double')
+mc.separator(style = 'none', h = 2)
+ 
+currentChar = mc.optionMenu(label = 'Loaded settings:', changeCommand = loadExist)
+mc.separator(style = 'none', h = 2)
+ 
+mc.text(label = 'Initial Setup', align = 'center')
+mc.separator(style = 'double')
+mc.separator(style = 'double')
+mc.separator(style = 'none', h = 2)
+ 
+mc.text(label = 'Set namespace of character:', align = 'left')
+mc.separator(style = 'none', h = 2)
+ 
+mc.rowColumnLayout(numberOfColumns = 2, cs = [2,2])
+nameSpaceFld = mc.textField('nameSpaceFld', tx = 'character01example01body01:', w = 250, ed = True)
+selectNameSpaceBtn = mc.button('selectNameSpaceBtn', label = 'Select', w = 50, c =lambda x:selectNames("nameSpace"))
+mc.separator(style = 'none', h = 2)
+mc.setParent('..')
+ 
+mc.text(label = 'Set name of groom:', align = 'left')
+mc.separator(style = 'none', h = 2)
+ 
+mc.rowColumnLayout(numberOfColumns = 2, cs = [2,2])
+nameGroomFld = mc.textField('nameGroomFld', tx = 'Select hairsystem/Replace with groom name', w = 250, ed = True, cc =lambda x:checkIfSetLOCExist())
+selectGroomBtn = mc.button('selectGroomBtn', label = 'Select', w = 50, c =lambda x:selectNames("groom"))
+mc.separator(style = 'none', h = 2)
+mc.setParent('..')
+ 
+mc.rowColumnLayout(numberOfColumns = 2, cs = [2,2])
+ 
+mc.text(label = 'Amount of Follicles:', align = 'left')
+amountFollicelsFld = mc.textField('amountFollicelsFld', w = 50)
+ 
+mc.setParent('..')
+ 
+mc.separator(style = 'none', h = 5)
+mc.text(label = 'Override Settings', align = 'center')
+mc.separator(style = 'double')
+mc.separator(style = 'double')
+mc.separator(style = 'none', h = 2)
+ 
+mc.text(label = 'Follicles to be overwritten, % or #:', align = 'left')
+mc.separator(style = 'none', h = 2)
+ 
+amountOverwrittenFld = mc.textField('amountOverwrittenFld', tx = '10% or 100 (example)', ed = True)
+mc.separator(style = 'none', h = 2)
+ 
+mc.frameLayout('dynamicOverrides', label = 'Dynamic Overrides' , cll = True, cl = True, en = False)
+ 
+mc.rowColumnLayout(numberOfColumns = 3, cs = [(2,5), (3,5)], adjustableColumn = True)
+mc.text(label = 'Length Flex Min', align = 'right')
+lengthFlexFldMin = mc.textField('lengthFlexFldMin', tx = '0.000', ed = True, w = 75, cc =lambda x:updateSlider("lengthFlexFldMin", "lengthFlexFldSliderMin", 0))
+lengthFlexFldSliderMin = mc.floatSlider('lengthFlexFldSliderMin', min = 0, max = 1, value = 0, w = 125, dc =lambda x:updateSliderField("lengthFlexFldMin", "lengthFlexFldSliderMin"))
+mc.text(label = 'Max', align = 'right')
+lengthFlexFldMax = mc.textField('lengthFlexFldMax', tx = '0.000', ed = True, w = 75, cc =lambda x:updateSlider("lengthFlexFldMax", "lengthFlexFldSliderMax", 0))
+lengthFlexFldSliderMax = mc.floatSlider('lengthFlexFldSliderMax', min = 0, max = 1, value = 0, w = 125, dc =lambda x:updateSliderField("lengthFlexFldMax", "lengthFlexFldSliderMax"))
+ 
+mc.text(label = 'Damp Min', align = 'right')
+dampFldMin = mc.textField('dampFldMin', tx = '0.000', ed = True, w = 75, cc =lambda x:updateSlider("dampFldMin", "dampFldSliderMin", 1))
+dampFldSliderMin = mc.floatSlider('dampFldSliderMin', min = 0, max = 100, value = 0, w = 125, dc =lambda x:updateSliderField("dampFldMin", "dampFldSliderMin"))
+mc.text(label = 'Max', align = 'right')
+dampFldMax = mc.textField('dampFldMax', tx = '0.000', ed = True, w = 75, cc =lambda x:updateSlider("dampFldMax", "dampFldSliderMax", 1))
+dampFldSliderMax = mc.floatSlider('dampFldSliderMax', min = 0, max = 100, value = 0, w = 125, dc =lambda x:updateSliderField("dampFldMax", "dampFldSliderMax"))
+ 
+mc.text(label = 'Stiffness Min', align = 'right')
+stiffnessFldMin = mc.textField('stiffnessFldMin', tx = '0.150', ed = True, w = 75, cc =lambda x:updateSlider("stiffnessFldMin", "stiffnessFldSliderMin", 0))
+stiffnessFldSliderMin = mc.floatSlider('stiffnessFldSliderMin', min = 0, max = 1, value = 0.150, w = 125, dc =lambda x:updateSliderField("stiffnessFldMin", "stiffnessFldSliderMin"))
+mc.text(label = 'Max', align = 'right')
+stiffnessFldMax = mc.textField('stiffnessFldMax', tx = '0.150', ed = True, w = 75, cc =lambda x:updateSlider("stiffnessFldMax", "stiffnessFldSliderMax", 0))
+stiffnessFldSliderMax = mc.floatSlider('stiffnessFldSliderMax', min = 0, max = 1, value = 0.150, w = 125, dc =lambda x:updateSliderField("stiffnessFldMax", "stiffnessFldSliderMax"))
+mc.setParent('..')
+ 
+mc.frameLayout(label = 'Stiffness Scale' , cll = True, cl = True)
+mc.rowColumnLayout(numberOfColumns = 2)
+ 
+mc.text(label = ' Min Values', align = 'left')
+mc.text(label = ' Max Values', align = 'left')
+ 
+stiffnessRampMin = mc.gradientControlNoAttr('stiffnessRampMin', h = 90, w = 170, dc =lambda x:updateRamps("stiffnessRampMin", "stiffnessMin"))
+stiffnessRampMax = mc.gradientControlNoAttr('stiffnessRampMax', h = 90, w = 170, dc =lambda x:updateRamps("stiffnessRampMax", "stiffnessMax"))
+ 
+mc.rowColumnLayout(numberOfColumns = 2, cs = [(2,50)])
+stiffnessMinMinFltFld = mc.floatField('stiffnessMinMinFltFld', minValue = 0, maxValue = 1, en = False)
+stiffnessMinMaxFltFld = mc.floatField('stiffnessMinMaxFltFld', minValue = 0, maxValue = 1, en = False)
+mc.setParent('..')
+ 
+mc.rowColumnLayout(numberOfColumns = 2, cs = [(2,50)])
+stiffnessMaxMinFltFld = mc.floatField('stiffnessMaxMinFltFld', minValue = 0, maxValue = 1, en = False)
+stiffnessMaxMaxFltFld = mc.floatField('stiffnessMaxMaxFltFld', minValue = 0, maxValue = 1, en = False)
+mc.setParent('..')
+ 
+mc.setParent('..')
+mc.setParent('..')
+ 
+mc.rowColumnLayout(numberOfColumns = 3, cs = [(2,5), (3,5)], adjustableColumn = True)
+mc.text(label = 'Start Curve Attract Min', align = 'right')
+startCrvAttractFldMin = mc.textField('startCrvAttractFldMin', tx = '0.000', ed = True, w = 75, cc =lambda x:updateSlider("startCrvAttractFldMin", "startCrvAttractFldSliderMin", 1))
+startCrvAttractFldSliderMin = mc.floatSlider('startCrvAttractFldSliderMin', min = 0, max = 100, value = 0, w = 125, dc =lambda x:updateSliderField("startCrvAttractFldMin", "startCrvAttractFldSliderMin"))
+mc.text(label = 'Max', align = 'right')
+startCrvAttractFldMax = mc.textField('startCrvAttractFldMax', tx = '0.000', ed = True, w = 75, cc =lambda x:updateSlider("startCrvAttractFldMax", "startCrvAttractFldSliderMax", 1))
+startCrvAttractFldSliderMax = mc.floatSlider('startCrvAttractFldSliderMax', min = 0, max = 100, value = 0, w = 125, dc =lambda x:updateSliderField("startCrvAttractFldMax", "startCrvAttractFldSliderMax"))
+ 
+mc.text(label = 'Attraction Damp Min', align = 'right')
+attractionDampFldMin = mc.textField('attractionDampFldMin', tx = '0.000', ed = True, w = 75, cc =lambda x:updateSlider("attractionDampFldMin", "attractionDampFldSliderMin", 0))
+attractionDampFldSliderMin = mc.floatSlider('attractionDampFldSliderMin', min = 0, max = 1, value = 0, w = 125, dc =lambda x:updateSliderField("attractionDampFldMin", "attractionDampFldSliderMin"))
+mc.text(label = 'Max', align = 'right')
+attractionDampFldMax = mc.textField('attractionDampFldMax', tx = '0.000', ed = True, w = 75, cc =lambda x:updateSlider("attractionDampFldMax", "attractionDampFldSliderMax", 0))
+attractionDampFldSliderMax = mc.floatSlider('attractionDampFldSliderMax', min = 0, max = 1, value = 0, w = 125, dc =lambda x:updateSliderField("attractionDampFldMax", "attractionDampFldSliderMax"))
+mc.setParent('..')
+ 
+mc.frameLayout(label = 'Attraction Scale' , cll = True, cl = True)
+mc.rowColumnLayout(numberOfColumns = 2)
+ 
+mc.text(label = ' Min Values', align = 'left')
+mc.text(label = ' Max Values', align = 'left')
+ 
+attractionRampMin = mc.gradientControlNoAttr('attractionRampMin', h = 90, w = 170, dc =lambda x:updateRamps("attractionRampMin", "attractionMin"))
+attractionRampMax = mc.gradientControlNoAttr('attractionRampMax', h = 90, w = 170, dc =lambda x:updateRamps("attractionRampMax", "attractionMax"))
+ 
+mc.rowColumnLayout(numberOfColumns = 2, cs = [(2,50)])
+attractionMinMinFltFld = mc.floatField('attractionMinMinFltFld', minValue = 0, maxValue = 1, en = False)
+attractionMinMaxFltFld = mc.floatField('attractionMinMaxFltFld', minValue = 0, maxValue = 1, en = False)
+mc.setParent('..')
+ 
+mc.rowColumnLayout(numberOfColumns = 2, cs = [(2,50)])
+attractionMaxMinFltFld = mc.floatField('attractionMaxMinFltFld', minValue = 0, maxValue = 1, en = False)
+attractionMaxMaxFltFld = mc.floatField('attractionMaxMaxFltFld', minValue = 0, maxValue = 1, en = False)
+mc.setParent('..')
+ 
+mc.setParent('..')
+mc.setParent('..')
+ 
+mc.setParent('..')
+ 
+mc.separator(style = 'none', h = 2)
+affectedCurvesBtn = mc.button('affectedCurvesBtn', label = 'Show affected curves', en = False, c =lambda x:affectedCurves())
+mc.separator(style = 'double')
+mc.separator(style = 'double')
+ 
+updateOverrideBtn = mc.button('updateOverrideBtn', label = 'Update Overrides', en = False, c =lambda x:overrideDynamics(1))
+overrideBtn = mc.button('overrideBtn', label = 'Override Dynamics', en = False, c =lambda x:overrideDynamics(0))
+disableOverrideBtn = mc.button('disableOverrideBtn', label = 'Disable Overrides', en = False, c =lambda x:disableOverride())
+ 
+mc.separator(style = 'double')
+mc.separator(style = 'double')
+#loadExisBtn = mc.button('loadExisBtn', label = 'Get existing override settings', w = 50, c =lambda x:loadExist())
+#mc.separator(style = 'double')
+resetBtn = mc.button('resetBtn', label = 'Reset Script', c=lambda x:resetScript())
+ 
+mc.setParent('..')
+ 
+mc.showWindow(overrideDynamicsUI)
+ 
+#------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------search scene for existing settings
+if mc.objExists('*_overrideDynUISettings_LOC'):
+    mc.select('*_overrideDynUISettings_LOC')
+    existingSettingsInScene = mc.ls(sl = True)
+ 
+    for i in range(0, len (existingSettingsInScene)):
+        tempSplitList = existingSettingsInScene[i].split('_')
+        charInScene.append(tempSplitList[0])
+     
+    addMenuItem()
+else:
+    mc.optionMenu(currentChar, e = True, en = False)
