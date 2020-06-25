@@ -1,0 +1,54 @@
+Some of clean lines for Cloth
+
+import maya.cmds as cmds
+ 
+#turn off visibility for geo
+cmds.setAttr("importBodyGeo|evan_model_grp|hairs__organic_hairSimple_geo.lodVisibility", 0)
+cmds.setAttr("importBodyGeo|evan_model_grp|eye_grp.lodVisibility", 0)
+cmds.setAttr("importColliderBodyGeo.lodVisibility", 0)
+ 
+#jacket AMM
+cmds.select("jacket_input_mesh")
+cmds.duplicate()
+cmds.group(n="jacket_AMM")
+cmds.hide("jacket_AMM")
+cmds.parent("jacket_AMM", "jacketSim")
+cmds.reorder("jacket_AMM", r=5)
+#tShirt AMM
+cmds.select("tShirt_input_mesh")
+cmds.duplicate()
+cmds.group(n="tShirt_AMM")
+cmds.hide("tShirt_AMM")
+cmds.parent("tShirt_AMM", "tShirtSim")
+cmds.reorder("tShirt_AMM", r=5)
+#pant AMM
+cmds.select("pant_input_mesh")
+cmds.duplicate()
+cmds.group(n="pant_AMM")
+cmds.hide("pant_AMM")
+cmds.parent("pant_AMM", "pantSim")
+cmds.reorder("pant_AMM", r=5)
+ 
+#clean
+cmds.rename("jacket_input_mesh1", "jacket_input_AAM")
+cmds.rename("pant_input_mesh1", "pant_input_AAM")
+cmds.rename("tShirt_input_mesh1", "tShirt_input_AAM")
+cmds.blendShape("jacket_input_mesh", "jacket_input_AAM", n="jacket_input_BS", en=1.0, w=[(0, 1)])
+cmds.blendShape("pant_input_mesh", "pant_input_AAM", n="pant_input_BS", en=1.0, w=[(0, 1)])
+cmds.blendShape("tShirt_input_mesh", "tShirt_input_AAM", n="tShirt_input_BS", en=1.0, w=[(0, 1)])
+ 
+ 
+#adding pushNode with ctl
+cmds.select("rig_preferences")
+cmds.addAttr (ln="pushNode",  at="double", min=0, max=1, dv=1)
+cmds.setAttr ("rig_preferences.pushNode",edit=True, keyable=True)
+cmds.connectAttr("rig_preferences.pushNode", "bodyCollider_input_dnPushNode.envelope", f=True)
+cmds.connectAttr("rig_preferences.pushNode", "bodyJacket_input_dnPushNode.envelope", f=True)
+cmds.connectAttr("rig_preferences.pushNode", "bodyTshirt_input_dnPushNode.envelope", f=True)
+startFrame = cmds.getAttr("rig_preferences.pantStartFrame")
+cmds.currentTime( startFrame, edit=True)
+cmds.setAttr("rig_preferences.pushNode", 1)
+cmds.setKeyframe("rig_preferences.pushNode")
+cmds.currentTime( startFrame+10, edit=True)
+cmds.setAttr("rig_preferences.pushNode", 0)
+cmds.setKeyframe("rig_preferences.pushNode")
